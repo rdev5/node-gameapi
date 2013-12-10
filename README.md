@@ -11,8 +11,8 @@ Simple data storage API concept project with support for:
 To get started:
 ```bash
 $ cd gameapi
-gameapi$ npm install .
-gameapi$ node lib/app.js
+$ npm install .
+$ node lib/app.js
 ```
 
 # gameapi-client
