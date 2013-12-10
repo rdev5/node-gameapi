@@ -8,5 +8,12 @@ Simple data storage API concept project with support for:
 * Lazy loading and optimistic locking
 * CORS
 
+To get started:
+```bash
+$ cd gameapi
+gameapi$ npm install .
+gameapi$ node lib/app.js
+```
+
 # gameapi-client
 Javascript demo client included (/client/gameapi-client.html) will prompt for authentication and save cursor position using a custom onMouseStop listener every 15ms.
