@@ -1,0 +1,246 @@
+<html>
+   <head>
+      <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
+      <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+      <script>
+         function authenticated() {
+            var ajax_setup = $.ajaxSetup();
+            return ajax_setup.headers !== undefined && ajax_setup.headers.Authorization !== undefined && ajax_setup.headers.Authorization !== null;
+         }
+
+         function login(username, password, callback) {
+            $.ajax({
+               async: false,
+               type: 'POST',
+               url: 'http://localhost:3000/sessions',
+               data: { username: username, password: password },
+               success: function(data, status, request) {
+
+                  if(request.getResponseHeader('Authorization') !== null) {
+                     $.ajaxSetup({
+                        headers: { 'Authorization': request.getResponseHeader('Authorization') }
+                     });
+
+                     $('#login form').hide();
+                  }
+
+                  callback(status, data, request);
+               },
+               error: function(request, status, error) {
+                  callback(status, error, request);
+               }
+            });
+         }
+
+         function get_states(callback) {
+            if(!authenticated()) {
+               set_status('#status', 'Authentication required');
+               return false;
+            }
+            
+            $.ajax({
+               async: false,
+               type: 'GET',
+               url: 'http://localhost:3000/states',
+               success: function(data, status, request) {
+                  callback(status, data, request);
+               },
+               error: function(request, status, error) {
+                  callback(status, error, request);
+               }
+            });
+         }
+
+         function set_state(state, last_ver, data, callback) {
+            if(!authenticated()) {
+               set_status('#status', 'Authentication required');
+               return false;
+            }
+
+            $.ajax({
+               async: false,
+               type: 'PUT',
+               url: 'http://localhost:3000/state/' + state + '?last_ver=' + last_ver,
+               data: data,
+               success: function(data, status, request) {
+                  callback(status, data, request);
+               },
+               error: function(request, status, error) {
+                  callback(status, error, request);
+               }
+            });
+         }
+
+         function get_state(state, callback) {
+            if(!authenticated()) {
+               set_status('#status', 'Authentication required');
+               return false;
+            }
+
+            $.ajax({
+               async: false,
+               type: 'GET',
+               url: 'http://localhost:3000/state/' + state,
+               success: function(data, status, request) {
+                  callback(status, data, request);
+               },
+               error: function(request, status, error) {
+                  callback(status, error, request);
+               }
+            });
+         }
+
+         // @return event m to callback after threshold seconds of $.mousemove() inactivity
+         function onMouseStop(target, threshold, callback) {
+            var last_move;
+            $(target).mousemove(function(m) {
+               last_move = new Date().getTime();
+               var t = setTimeout(function() {
+                  var currentTime = new Date().getTime();
+                  if(currentTime - last_move > threshold) {
+                     callback(m);
+                  }
+               }, threshold);
+            });
+         }
+
+         function set_status(target, text) {
+            $(target).text(text);
+         }
+
+         function set_marker(target, x, y) {
+            $(target).show();
+
+            // Center positioning
+            $(target).offset({
+               top: y - ($(target).outerWidth() / 2),
+               left: x - ($(target).outerWidth() / 2)
+            });
+         }
+
+         function reset_marker(target) {
+            $(target).offset({
+               top: 0,
+               left: 0
+            });
+
+            $(target).hide();
+         }
+
+         function app() {
+            if(!authenticated()) {
+               set_status('#status', 'Authentication required');
+               return false;
+            }
+            
+            var stateBlock;
+
+            // Load initial position
+            get_state('position', function(status, data, request) {
+               if(status == 'success') {
+                  stateBlock = data;
+               } else {
+                  set_state('position', 0, { x: 0, y: 0 }, function(status, data, request) {
+                     stateBlock = data;
+                  });
+               }
+
+               var pos = stateBlock.data;
+               set_status('#status', stateBlock.version + '.' + pos.x + ',' + pos.y);
+               set_marker('#marker', pos.x, pos.y);
+            });
+
+            // onMouseStop, save state block
+            var last_ver = stateBlock.version;
+            onMouseStop('#canvas', 15, function(m) {
+
+               if(!authenticated()) {
+                  set_status('#status', 'Authentication required');
+                  return false;
+               }
+
+               set_state('position', last_ver, { x: m.pageX, y: m.pageY }, function(status, data, request) {
+                  var pos = data.data;
+                  last_ver = data.version;
+                  set_status('#status', data.version + '.' + pos.x + ',' + pos.y);
+                  set_marker('#marker', pos.x, pos.y);
+               });
+            });
+         }
+
+         $('document').ready(function() {
+            $('#login form').find('input[name="username"]').focus();
+
+            $('#login form').submit(function() {
+               var username = $(this).find('input[name="username"]').val();
+               var password = $(this).find('input[name="password"]').val();
+
+               login(username, password, function(status, data, request) {
+                  if(!authenticated()) {
+                     $('#status').text('Login failed!');
+                     return false;
+                  }
+
+                  app();
+               });
+               return false;
+            });
+         });
+      </script>
+
+      <style>
+         body {
+            background: #f5f5f5;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+
+            font-family: Segoe UI, sans-serif;
+            font-size: 12px;
+         }
+
+         #canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+         }
+
+         #status {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            background: #ddd;
+            font-size: 12px;
+            color: #888;
+            float: left;
+            padding: 3px 5px;
+         }
+
+         #marker {
+            display: none;
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 25px;
+            height: 25px;
+            background: #0cf;
+         }
+      </style>
+   </head>
+   <body>
+      <div id="status"></div>
+
+      <div id="login">
+         <form action="http://localhost:3000/sessions" method="POST">
+            <input type="text" name="username" placeholder="Username" />
+            <input type="password" name="password" placeholder="Password" />
+            <input type="submit" value="Login" />
+         </form>
+      </div>
+
+      <div id="canvas">
+         <div id="marker"></div>
+      </div>
+   </body>
+</html>
