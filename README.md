@@ -9,4 +9,4 @@ Simple data storage API concept project with support for:
 * CORS
 
 # gameapi-client
-Javascript demo client included (/client) will prompt for authentication and save cursor position using a custom onMouseStop listener every 15ms.
+Javascript demo client included (/client/gameapi-client.html) will prompt for authentication and save cursor position using a custom onMouseStop listener every 15ms.
