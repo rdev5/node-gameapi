@@ -1,6 +1,6 @@
 # node-gameapi
 
-> Based on [Game Servers and Couchbase with Node.js](blog.couchbase.com/game-servers-and-couchbase-nodejs-part-1)
+> Based on [Game Servers and Couchbase with Node.js](http://blog.couchbase.com/game-servers-and-couchbase-nodejs-part-1)
 
 Simple data storage API concept project with support for:
 * Session management via **Authorization** header
